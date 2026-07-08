@@ -3873,6 +3873,10 @@ Text:
             dgvOutput.DataBindingComplete -= dgvOutput_DataBindingComplete;
             dgvOutput.DataBindingComplete += dgvOutput_DataBindingComplete;
 
+            // Đăng ký CellPainting để ẩn vẽ checkbox cho dòng con Person
+            dgvOutput.CellPainting -= dgvOutput_CellPainting;
+            dgvOutput.CellPainting += dgvOutput_CellPainting;
+
             // === RIGHT-CLICK CONTEXT MENU ===
             var ctxMenu = new ContextMenuStrip();
             var menuChayLai = new ToolStripMenuItem("🔄 Chạy lại");
@@ -4525,11 +4529,28 @@ Text:
                 {
                     if (row.Cells["RowType"].Value?.ToString() == "Person")
                     {
-                        if (row.Cells["chkSelect"] is DataGridViewCheckBoxCell)
+                        row.Cells["chkSelect"].Value = false;
+                        row.Cells["chkSelect"].ReadOnly = true;
+                    }
+                }
+            }
+        }
+
+        private void dgvOutput_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                var dgv = (DataGridView)sender;
+                if (dgv.Columns[e.ColumnIndex].Name == "chkSelect")
+                {
+                    if (dgv.Columns.Contains("RowType"))
+                    {
+                        string rowType = dgv.Rows[e.RowIndex].Cells["RowType"].Value?.ToString() ?? "";
+                        if (rowType == "Person")
                         {
-                            row.Cells["chkSelect"] = new DataGridViewTextBoxCell();
-                            row.Cells["chkSelect"].Value = null;
-                            row.Cells["chkSelect"].ReadOnly = true;
+                            // Chỉ vẽ background mà không vẽ checkbox glyph
+                            e.PaintBackground(e.CellBounds, true);
+                            e.Handled = true;
                         }
                     }
                 }
