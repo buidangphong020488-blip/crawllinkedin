@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using ExcelDataReader;
 using GenerativeAI;
 using GenerativeAI.Types;
@@ -769,13 +769,25 @@ namespace crawlData
                                                  leader.linkedin = "N/A";
                                              }
                                              else if (!string.IsNullOrEmpty(leaderLinkedIn))
-                                             {
-                                                 leader.linkedin = CleanLinkedInUrl(leaderLinkedIn);
-                                             }
-                                         }
-                                     }
+                                            {
+                                                leader.linkedin = CleanLinkedInUrl(leaderLinkedIn);
+                                            }
+                                        }
+                                    }
 
-                                     }));
+                                    var crawlRes = await SaveCrawlResult(item, CompanyName);
+                                    long personId = crawlRes.lastPersonId ?? 0;
+                                    string companyId = crawlRes.companyId;
+                                    bool isEmpty = IsResultEmpty(item);
+
+                                    this.Invoke(new Action(() =>
+                                    {
+                                        lock (_gridLock)
+                                        {
+                                            UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
+                                        }
+                                        row["Status"] = isEmpty ? "Completed but Empty" : "Completed";
+                                    }));
                                 }
                             }
                         }
@@ -1467,7 +1479,9 @@ namespace crawlData
                                         }
                                     }
 
-                                    long personId = (await SaveCrawlResult(item, CompanyName)) ?? 0;
+                                    var crawlRes = await SaveCrawlResult(item, CompanyName);
+                                    long personId = crawlRes.lastPersonId ?? 0;
+                                    string companyId = crawlRes.companyId;
 
                                     // Kiểm tra xem kết quả có thực sự có data hay chỉ có tên
                                     bool isEmpty = IsResultEmpty(item);
@@ -1476,7 +1490,7 @@ namespace crawlData
                                     {
                                         lock (_gridLock)
                                         {
-                                            UpdateGridOutput(item, CompanyName, personId.ToString(), row["STT"]?.ToString() ?? "", ref sttCount);
+                                            UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
                                         }
                                         row["Status"] = isEmpty ? "Completed but Empty" : "Completed";
                                     }));
@@ -2174,30 +2188,33 @@ Text:
                                         continue; // thử item tiếp trong companies (nếu có)
 
                                     // Tìm được website → lưu DB + update grid rồi dừng luôn
-                                    long personId = (await SaveCrawlResult(item, CompanyName)) ?? 0;
-                                    foundWebsite = true;
+                                     var crawlRes = await SaveCrawlResult(item, CompanyName);
+                                     long personId = crawlRes.lastPersonId ?? 0;
+                                     string companyId = crawlRes.companyId;
+                                     foundWebsite = true;
 
-                                    this.Invoke(new Action(() =>
-                                    {
-                                        var existingRows = mydata.AsEnumerable()
-                                            .Where(r => r.Field<string>("CompanyName") == CompanyName)
-                                            .ToList();
+                                     this.Invoke(new Action(() =>
+                                     {
+                                         var existingRows = mydata.AsEnumerable()
+                                             .Where(r => r.Field<string>("CompanyName") == CompanyName)
+                                             .ToList();
 
-                                        if (existingRows.Any())
-                                        {
-                                            foreach (var er in existingRows)
-                                            {
-                                                er["Website"] = item.website?.ToString() ?? "N/A";
-                                                er["CompanyAddress"] = string.IsNullOrEmpty(er["CompanyAddress"]?.ToString())
-                                                    ? (item.address?.ToString() ?? "") : er["CompanyAddress"];
-                                                er["Industry"] = string.IsNullOrEmpty(er["Industry"]?.ToString())
-                                                    ? (item.industry?.ToString() ?? "") : er["Industry"];
-                                            }
-                                        }
-                                        else
-                                        {
-                                            UpdateGridOutput(item, CompanyName, personId.ToString(), row["STT"]?.ToString() ?? "", ref sttCount);
-                                        }
+                                         if (existingRows.Any())
+                                         {
+                                             foreach (var er in existingRows)
+                                             {
+                                                 er["Website"] = item.website?.ToString() ?? "N/A";
+                                                 er["CompanyAddress"] = string.IsNullOrEmpty(er["CompanyAddress"]?.ToString())
+                                                     ? (item.address?.ToString() ?? "") : er["CompanyAddress"];
+                                                 er["Industry"] = string.IsNullOrEmpty(er["Industry"]?.ToString())
+                                                     ? (item.industry?.ToString() ?? "") : er["Industry"];
+                                                 er["CompanyID"] = companyId;
+                                             }
+                                         }
+                                         else
+                                         {
+                                             UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
+                                         }
 
                                         row["Status"] = "Completed (Retry)";
                                     }));
@@ -4734,37 +4751,38 @@ Text:
                                     if (token.IsCancellationRequested) break;
 
                                     // LƯU VÀO DATABASE
-                                    SaveCrawlResult(item, CompanyName);
-                                    CompanyAddress = item.address ?? "";
-                                    Industry = item.industry ?? "";
-                                    PhoneCo = item.phone ?? "";                                    
-                                    Website = item.website ?? "";
-                                    EmailCo = item.email ?? "";
-                                    LinkedInCo = item.linkedin ?? "";
-                                    if (item.leaders != null)
-                                    {
-                                        // Người đầu tiên để điền vào dòng hiện tại
-                                        if (item.leaders.Count > 0)
-                                        {
-                                            FullNamePe = item.leaders[0].name ?? "";
-                                            PositionPe = item.leaders[0].position ?? "";
-                                            LinkedInPe = item.leaders[0].linkedin ?? "";
-                                            EmailPe = item.leaders[0].email ?? "";
-                                            PhonePe = item.leaders[0].phone ?? "";
-                                        }
-                                    }
+                                     var crawlRes = await SaveCrawlResult(item, CompanyName);
+                                     CompanyAddress = item.address ?? "";
+                                     Industry = item.industry ?? "";
+                                     PhoneCo = item.phone ?? "";                                    
+                                     Website = item.website ?? "";
+                                     EmailCo = item.email ?? "";
+                                     LinkedInCo = item.linkedin ?? "";
+                                     if (item.leaders != null)
+                                     {
+                                         // Người đầu tiên để điền vào dòng hiện tại
+                                         if (item.leaders.Count > 0)
+                                         {
+                                             FullNamePe = item.leaders[0].name ?? "";
+                                             PositionPe = item.leaders[0].position ?? "";
+                                             LinkedInPe = item.leaders[0].linkedin ?? "";
+                                             EmailPe = item.leaders[0].email ?? "";
+                                             PhonePe = item.leaders[0].phone ?? "";
+                                         }
+                                     }
 
-                                    // --- ROW CHA: Thông tin công ty ---
-                                    DataRow dr = mydata.NewRow();
-                                    dr["STT"] = sttCount++;
-                                    dr["CompanyName"] = CompanyName;
-                                    dr["CompanyAddress"] = CompanyAddress;
-                                    dr["Industry"] = Industry;
-                                    dr["PhoneCo"] = PhoneCo;
-                                    dr["Website"] = Website;
-                                    dr["EmailCo"] = EmailCo;
-                                    dr["LinkedInCo"] = LinkedInCo;
-                                    dr["RowType"] = "Company";
+                                     // --- ROW CHA: Thông tin công ty ---
+                                     DataRow dr = mydata.NewRow();
+                                     dr["STT"] = sttCount++;
+                                     dr["CompanyName"] = CompanyName;
+                                     dr["CompanyAddress"] = CompanyAddress;
+                                     dr["Industry"] = Industry;
+                                     dr["PhoneCo"] = PhoneCo;
+                                     dr["Website"] = Website;
+                                     dr["EmailCo"] = EmailCo;
+                                     dr["LinkedInCo"] = LinkedInCo;
+                                     dr["CompanyID"] = crawlRes.companyId;
+                                     dr["RowType"] = "Company";
                                     this.Invoke(new Action(() =>
                                     {
                                         mydata.Rows.Add(dr);
