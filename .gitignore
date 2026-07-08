@@ -1,0 +1,11 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.db
+*.sqlite
+*.log
+Chrome_v121/
+chromedriver.exe
+chrome.exe
