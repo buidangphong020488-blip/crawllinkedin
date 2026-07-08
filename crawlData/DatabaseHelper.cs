@@ -134,7 +134,22 @@ namespace crawlData
                     if (parameters != null) cmd.Parameters.AddRange(parameters);                    
                     using (var reader = cmd.ExecuteReader())
                     {
-                        dt.Load(reader);
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            Type type = typeof(string);
+                            try { type = reader.GetFieldType(i) ?? typeof(string); } catch { }
+                            dt.Columns.Add(reader.GetName(i), type);
+                        }
+                        
+                        while (reader.Read())
+                        {
+                            DataRow row = dt.NewRow();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                row[i] = reader.GetValue(i);
+                            }
+                            dt.Rows.Add(row);
+                        }
                     }
                 }
             }
