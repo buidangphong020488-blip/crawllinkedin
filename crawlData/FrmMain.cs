@@ -3908,8 +3908,9 @@ Text:
             ctxMenu.Items.Add(menuCrawlWebsite);
             ctxMenu.Items.Add(menuCrawlLinkedIn);
 
-                        menuChayLai.Click += async (s, ev) =>
+                                    menuChayLai.Click += async (s, ev) =>
             {
+                dgvOutput.EndEdit();
                 _isRerunMode = true;
                 // Thu thập tất cả CompanyName từ các dòng đang được ✅ check hoặc đang được bôi xanh (Selected)
                 var companiesToRerun = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -4005,8 +4006,9 @@ Text:
             };
 
 
-                        menuUnblock.Click += async (s, ev) =>
+                                    menuUnblock.Click += async (s, ev) =>
             {
+                dgvOutput.EndEdit();
                 _isRerunMode = true;
                 // Lấy tất cả các dòng Person được check, chọn hoặc bôi xanh
                 var checkedRows = new List<DataGridViewRow>();
@@ -4102,8 +4104,9 @@ Text:
                 }
             };
 
-                        menuCrawlGoogle.Click += async (s, ev) =>
+                                    menuCrawlGoogle.Click += async (s, ev) =>
             {
+                dgvOutput.EndEdit();
                 _isRerunMode = true;
                 // Thu thập tất cả CompanyName từ các dòng đang được ✅ check
                 var companiesToRerun = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -4195,8 +4198,9 @@ Text:
                                 finally { btnStart.Enabled = true; btnStop.Enabled = false; lblStatus.Text = "Finished Google Crawl"; UncheckOutputGrid(); }
             };
 
-                        menuCrawlWebsite.Click += async (s, ev) =>
+                                    menuCrawlWebsite.Click += async (s, ev) =>
             {
+                dgvOutput.EndEdit();
                 _isRerunMode = true;
                 // Thu thập các dòng Company được chọn
                 var selectedCompRows = new List<DataGridViewRow>();
@@ -4328,8 +4332,9 @@ Text:
                 }
             };
 
-                        menuCrawlLinkedIn.Click += async (s, ev) =>
+                                    menuCrawlLinkedIn.Click += async (s, ev) =>
             {
+                dgvOutput.EndEdit();
                 _isRerunMode = true;
                 // Thu thập các dòng Company được chọn
                 var selectedCompRows = new List<DataGridViewRow>();
