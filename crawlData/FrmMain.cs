@@ -940,17 +940,33 @@ namespace crawlData
                             finalLinkedIn = CleanLinkedInUrl(deepLinkedIn);
                         }
 
-                        if (!hasPhone && !hasEmail && !hasLinkedIn)
+                                                if (!hasPhone && !hasEmail && !hasLinkedIn)
                         {
-                            string cleanCurPhone = target.ExistingPhone.Trim();
-                            if (string.IsNullOrEmpty(cleanCurPhone) || cleanCurPhone.ToUpper() == "N/A")
+                            string cleanedCurPhone = CleanPhone(target.ExistingPhone);
+                            string cleanedCurEmail = CleanPhone(target.ExistingEmail);
+
+                            bool hasAnyContact = (!string.IsNullOrEmpty(cleanedCurPhone) && cleanedCurPhone.ToUpper() != "N/A") ||
+                                                 (!string.IsNullOrEmpty(cleanedCurEmail) && cleanedCurEmail.ToUpper() != "N/A");
+
+                            if (!hasAnyContact)
                             {
-                                finalPhone = "Lỗi trích xuất email, số điện thoại";
+                                if (string.IsNullOrEmpty(cleanedCurPhone) || cleanedCurPhone.ToUpper() == "N/A")
+                                {
+                                    finalPhone = "Lỗi trích xuất email, số điện thoại";
+                                }
+                                else
+                                {
+                                    finalPhone = cleanedCurPhone + "\nLỗi trích xuất email, số điện thoại";
+                                }
                             }
-                            else if (!cleanCurPhone.Contains("Lỗi trích xuất email, số điện thoại"))
+                            else
                             {
-                                finalPhone = cleanCurPhone + "\nLỗi trích xuất email, số điện thoại";
+                                finalPhone = cleanedCurPhone;
                             }
+                        }
+                        else
+                        {
+                            finalPhone = CleanPhone(finalPhone);
                         }
 
                         if (!string.IsNullOrEmpty(companyId))
@@ -1471,18 +1487,34 @@ namespace crawlData
                                             CloseExtraTabs(localDriver);
                                         }
 
-                                        // Nếu không trích xuất được email hay sđt nào từ website, cảnh báo ở ô phone
+                                                                                // Nếu không trích xuất được email hay sđt nào từ website, cảnh báo ở ô phone
                                         if (!isSuccess)
                                         {
-                                            string cleanCurPhone = curPhone.Trim();
-                                            if (string.IsNullOrEmpty(cleanCurPhone) || cleanCurPhone.ToUpper() == "N/A")
+                                            string cleanedCurPhone = CleanPhone(curPhone);
+                                            string cleanedCurEmail = CleanPhone(curEmail);
+
+                                            bool hasAnyContact = (!string.IsNullOrEmpty(cleanedCurPhone) && cleanedCurPhone.ToUpper() != "N/A") ||
+                                                                 (!string.IsNullOrEmpty(cleanedCurEmail) && cleanedCurEmail.ToUpper() != "N/A");
+
+                                            if (!hasAnyContact)
                                             {
-                                                item.phone = "Lỗi trích xuất email, số điện thoại";
+                                                if (string.IsNullOrEmpty(cleanedCurPhone) || cleanedCurPhone.ToUpper() == "N/A")
+                                                {
+                                                    item.phone = "Lỗi trích xuất email, số điện thoại";
+                                                }
+                                                else
+                                                {
+                                                    item.phone = cleanedCurPhone + "\nLỗi trích xuất email, số điện thoại";
+                                                }
                                             }
-                                            else if (!cleanCurPhone.Contains("Lỗi trích xuất email, số điện thoại"))
+                                            else
                                             {
-                                                item.phone = cleanCurPhone + "\nLỗi trích xuất email, số điện thoại";
+                                                item.phone = cleanedCurPhone;
                                             }
+                                        }
+                                        else
+                                        {
+                                            item.phone = CleanPhone(item.phone?.ToString() ?? "");
                                         }
                                     }
 
@@ -2786,8 +2818,8 @@ Text:
                             new SqliteParameter("$web", website),
                             new SqliteParameter("$industry", company.industry?.ToString() ?? ""),
                             new SqliteParameter("$mail", company.email?.ToString() ?? ""),
-                            new SqliteParameter("$link", company.linkedin?.ToString() ?? ""),
-                            new SqliteParameter("$phone", company.phone?.ToString() ?? ""),
+                                                        new SqliteParameter("$link", company.linkedin?.ToString() ?? ""),
+                            new SqliteParameter("$phone", CleanPhone(company.phone?.ToString() ?? "")),
                             new SqliteParameter("$date", now)
                         });
                         cmdComp.ExecuteNonQuery();
@@ -2864,6 +2896,15 @@ Text:
             url = System.Text.RegularExpressions.Regex.Replace(url, @"(?<=://)[a-z]{2}\.linkedin\.com", "linkedin.com", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             url = System.Text.RegularExpressions.Regex.Replace(url, @"^([a-z]{2})\.linkedin\.com", "linkedin.com", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             return url;
+        }
+
+        private string CleanPhone(string phone)
+        {
+            if (string.IsNullOrEmpty(phone)) return "";
+            var lines = phone.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                             .Select(l => l.Trim())
+                             .Where(l => !string.Equals(l, "Lỗi trích xuất email, số điện thoại", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(l));
+            return string.Join("\n", lines);
         }
 
         public Task<(long? lastPersonId, string companyId)> SaveCrawlResult(dynamic company, string CompanyName)
@@ -2951,8 +2992,8 @@ Text:
                         cmdComp.Parameters.AddWithValue("$web", website);
                         cmdComp.Parameters.AddWithValue("$industry", company.industry?.ToString() ?? "");
                         cmdComp.Parameters.AddWithValue("$mail", company.email?.ToString() ?? "");
-                        cmdComp.Parameters.AddWithValue("$link", company.linkedin?.ToString() ?? "");
-                        cmdComp.Parameters.AddWithValue("$phone", company.phone?.ToString() ?? "");
+                                                cmdComp.Parameters.AddWithValue("$link", company.linkedin?.ToString() ?? "");
+                        cmdComp.Parameters.AddWithValue("$phone", CleanPhone(company.phone?.ToString() ?? ""));
                         cmdComp.Parameters.AddWithValue("$date", now);
 
                         cmdComp.ExecuteNonQuery();

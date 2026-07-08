@@ -244,7 +244,6 @@ namespace crawlData
             dgvInput.GridColor = System.Drawing.Color.FromArgb(49, 50, 68);
             dgvInput.Location = new System.Drawing.Point(12, 106);
             dgvInput.Name = "dgvInput";
-            dgvInput.ReadOnly = true;
             dgvInput.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(49, 50, 68);
@@ -294,7 +293,6 @@ namespace crawlData
             dgvOutput.Location = new System.Drawing.Point(12, 340);
             dgvOutput.MultiSelect = false;
             dgvOutput.Name = "dgvOutput";
-            dgvOutput.ReadOnly = true;
             dgvOutput.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(49, 50, 68);
