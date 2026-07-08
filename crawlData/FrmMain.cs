@@ -4604,6 +4604,9 @@ Text:
 
             foreach (DataGridViewColumn col in dgvOutput.Columns)
             {
+                // Không hiển thị bộ lọc cho các cột hệ thống
+                if (col.Name == "CompanyID" || col.Name == "PersonID" || col.Name == "RowType") continue;
+
                 // Ẩn các cột hệ thống không cần thiết phải hiện checkbox
                 if (!col.Visible && string.IsNullOrEmpty(col.HeaderText)) continue;
 
@@ -4641,6 +4644,11 @@ Text:
         }
         private void LoadColumnSettings()
         {
+            // Luôn ẩn các cột hệ thống
+            if (dgvOutput.Columns.Contains("RowType")) dgvOutput.Columns["RowType"].Visible = false;
+            if (dgvOutput.Columns.Contains("CompanyID")) dgvOutput.Columns["CompanyID"].Visible = false;
+            if (dgvOutput.Columns.Contains("PersonID")) dgvOutput.Columns["PersonID"].Visible = false;
+
             string savedConfig = Properties.Settings.Default.ColumnConfigs;
             if (string.IsNullOrEmpty(savedConfig)) return;
 
@@ -4648,6 +4656,9 @@ Text:
 
             foreach (DataGridViewColumn col in dgvOutput.Columns)
             {
+                // Bỏ qua các cột hệ thống để chúng luôn ẩn
+                if (col.Name == "CompanyID" || col.Name == "PersonID" || col.Name == "RowType") continue;
+
                 // Nếu tên cột nằm trong danh sách đã lưu, thì ẩn nó đi
                 if (hiddenColumns.Contains(col.Name))
                 {
