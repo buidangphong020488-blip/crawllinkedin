@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using ExcelDataReader;
 using GenerativeAI;
 using GenerativeAI.Types;
@@ -982,6 +982,7 @@ namespace crawlData
                             if (target.InputRow != null)
                             {
                                 target.InputRow["Status"] = "Completed";
+                                target.InputRow["Select"] = false;
                             }
                         }));
                     }
@@ -4433,7 +4434,7 @@ Text:
             }
         }
 
-        private void AddCompanyFromGridRow(DataGridViewRow row, HashSet<string> companySet)
+                private void AddCompanyFromGridRow(DataGridViewRow row, HashSet<string> companySet)
         {
             string rt = row.Cells["RowType"].Value?.ToString() ?? "";
             if (rt == "Company")
@@ -4443,14 +4444,32 @@ Text:
             }
             else if (rt == "Person")
             {
-                // Tìm dòng Company cha phía trên
-                for (int ri = row.Index - 1; ri >= 0; ri--)
+                string companyId = row.Cells["CompanyID"].Value?.ToString() ?? "";
+                bool found = false;
+                if (!string.IsNullOrEmpty(companyId))
                 {
-                    if (dgvOutput.Rows[ri].Cells["RowType"].Value?.ToString() == "Company")
+                    foreach (DataGridViewRow r in dgvOutput.Rows)
                     {
-                        string cn = dgvOutput.Rows[ri].Cells["CompanyName"].Value?.ToString() ?? "";
-                        if (!string.IsNullOrEmpty(cn)) companySet.Add(cn);
-                        break;
+                        if (r.Cells["RowType"].Value?.ToString() == "Company" &&
+                            (r.Cells["CompanyID"].Value?.ToString() ?? "") == companyId)
+                        {
+                            string cn = r.Cells["CompanyName"].Value?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(cn)) companySet.Add(cn);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found)
+                {
+                    for (int ri = row.Index - 1; ri >= 0; ri--)
+                    {
+                        if (dgvOutput.Rows[ri].Cells["RowType"].Value?.ToString() == "Company")
+                        {
+                            string cn = dgvOutput.Rows[ri].Cells["CompanyName"].Value?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(cn)) companySet.Add(cn);
+                            break;
+                        }
                     }
                 }
             }
@@ -4467,15 +4486,34 @@ Text:
             }
             else if (rt == "Person")
             {
-                // Tìm dòng Company cha phía trên
-                for (int ri = row.Index - 1; ri >= 0; ri--)
+                string companyId = row.Cells["CompanyID"].Value?.ToString() ?? "";
+                bool found = false;
+                if (!string.IsNullOrEmpty(companyId))
                 {
-                    if (dgvOutput.Rows[ri].Cells["RowType"].Value?.ToString() == "Company")
+                    foreach (DataGridViewRow r in dgvOutput.Rows)
                     {
-                        string cn = dgvOutput.Rows[ri].Cells["CompanyName"].Value?.ToString() ?? "";
-                        if (!string.IsNullOrEmpty(cn) && seenSet.Add(cn))
-                            targetList.Add(dgvOutput.Rows[ri]);
-                        break;
+                        if (r.Cells["RowType"].Value?.ToString() == "Company" &&
+                            (r.Cells["CompanyID"].Value?.ToString() ?? "") == companyId)
+                        {
+                            string cn = r.Cells["CompanyName"].Value?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(cn) && seenSet.Add(cn))
+                                targetList.Add(r);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found)
+                {
+                    for (int ri = row.Index - 1; ri >= 0; ri--)
+                    {
+                        if (dgvOutput.Rows[ri].Cells["RowType"].Value?.ToString() == "Company")
+                        {
+                            string cn = dgvOutput.Rows[ri].Cells["CompanyName"].Value?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(cn) && seenSet.Add(cn))
+                                targetList.Add(dgvOutput.Rows[ri]);
+                            break;
+                        }
                     }
                 }
             }
