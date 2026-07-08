@@ -2738,15 +2738,6 @@ Text:
             totalStaffCrawl = mydata.Rows.Count + 1;
             this.Invoke(new Action(() => {
                 lblOutput.Text = $"OUTPUT: {totalStaffCrawl}";
-
-                if (dgvOutput.Rows.Count > 0)
-                {
-                    int lastIndex = dgvOutput.Rows.Count - 1;
-                    dgvOutput.FirstDisplayedScrollingRowIndex = lastIndex;
-
-                    dgvOutput.ClearSelection();
-                    dgvOutput.Rows[lastIndex].Selected = true;
-                }
             }));
         }
         private void RenumberSTT()
