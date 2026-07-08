@@ -2983,7 +2983,9 @@ Text:
                     (ID, CompanyName, Address, Website, Industry, Email, Linkedin, Phone, LastUpdate) 
                     VALUES ($id, $name, $addr, $web, $industry, $mail, $link, $phone, $date)";
                     }
-                                                                                                sqlCompany = @"UPDATE Company 
+                    else
+                    {
+                        sqlCompany = @"UPDATE Company 
                     SET CompanyName = CASE WHEN ($name IS NOT NULL AND TRIM($name) <> '' AND UPPER(TRIM($name)) <> 'N/A') THEN $name ELSE CompanyName END,
                         Address = CASE WHEN ($addr IS NOT NULL AND TRIM($addr) <> '' AND UPPER(TRIM($addr)) <> 'N/A') THEN $addr ELSE Address END,
                         Website = CASE WHEN ($web IS NOT NULL AND TRIM($web) <> '' AND UPPER(TRIM($web)) <> 'N/A') THEN $web ELSE Website END,
@@ -2993,6 +2995,7 @@ Text:
                         Phone = CASE WHEN ($phone IS NOT NULL AND TRIM($phone) <> '' AND UPPER(TRIM($phone)) <> 'N/A') THEN $phone ELSE Phone END,
                         LastUpdate=$date 
                     WHERE ID=$id";
+                    }
 
                     using (var cmdComp = new SqliteCommand(sqlCompany, conn, trans))
                     {
