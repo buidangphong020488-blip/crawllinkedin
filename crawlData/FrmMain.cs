@@ -779,7 +779,7 @@ namespace crawlData
                                     }
 
                                                                          var crawlRes = await SaveCrawlResult((object)item, CompanyName);
-                                     long personId = crawlRes.lastPersonId ?? 0;
+                                     string personId = crawlRes.lastPersonId ?? "";
                                      string companyId = crawlRes.companyId;
                                     bool isEmpty = IsResultEmpty(item);
 
@@ -1537,7 +1537,7 @@ namespace crawlData
                                     }
 
                                                                          var crawlRes = await SaveCrawlResult((object)item, CompanyName);
-                                     long personId = crawlRes.lastPersonId ?? 0;
+                                     string personId = crawlRes.lastPersonId ?? "";
                                      string companyId = crawlRes.companyId;
 
                                     // Kiểm tra xem kết quả có thực sự có data hay chỉ có tên
@@ -2247,7 +2247,7 @@ Text:
 
                                     // Tìm được website → lưu DB + update grid rồi dừng luôn
                                                                           var crawlRes = await SaveCrawlResult((object)item, CompanyName);
-                                     long personId = crawlRes.lastPersonId ?? 0;
+                                     string personId = crawlRes.lastPersonId ?? "";
                                      string companyId = crawlRes.companyId;
                                      foundWebsite = true;
 
@@ -2938,16 +2938,16 @@ Text:
             }
         }
 
-        public Task<(long? lastPersonId, string companyId)> SaveCrawlResult(dynamic company, string CompanyName)
+        public Task<(string lastPersonId, string companyId)> SaveCrawlResult(dynamic company, string CompanyName)
         {
-            long? lastPersonId = null;
+            string lastPersonId = "";
             string companyId = "";
 
             try
             {
                 string companyname = CompanyName;
                 if (string.IsNullOrEmpty(companyname))
-                    return Task.FromResult<(long? lastPersonId, string companyId)>((null, ""));
+                    return Task.FromResult<(string lastPersonId, string companyId)>((null, ""));
 
                 // Clean LinkedIn URL
                 string rawLinkedIn = company.linkedin?.ToString() ?? "";
@@ -2981,11 +2981,11 @@ Text:
 
                 DatabaseHelper.ExecuteBatch((conn, trans) =>
                 {
-                    // 1. Check Company
-                    string checkCompSql = "SELECT ID FROM Company WHERE Website = $web";
+                    // 1. Check Company - Check theo CompanyName là chắc chắn nhất
+                    string checkCompSql = "SELECT ID FROM Company WHERE CompanyName = $name COLLATE NOCASE LIMIT 1";
                     using (var cmdCheck = new SqliteCommand(checkCompSql, conn, trans))
                     {
-                        cmdCheck.Parameters.AddWithValue("$web", website);
+                        cmdCheck.Parameters.AddWithValue("$name", companyname);
                         var result = cmdCheck.ExecuteScalar();
                         if (result != null)
                             outCompanyId = result.ToString();
@@ -3023,7 +3023,7 @@ Text:
                         cmdComp.Parameters.AddWithValue("$web", website);
                         cmdComp.Parameters.AddWithValue("$industry", company.industry?.ToString() ?? "");
                         cmdComp.Parameters.AddWithValue("$mail", company.email?.ToString() ?? "");
-                                                cmdComp.Parameters.AddWithValue("$link", company.linkedin?.ToString() ?? "");
+                        cmdComp.Parameters.AddWithValue("$link", company.linkedin?.ToString() ?? "");
                         cmdComp.Parameters.AddWithValue("$phone", CleanPhone(company.phone?.ToString() ?? ""));
                         cmdComp.Parameters.AddWithValue("$date", now);
 
@@ -3038,7 +3038,7 @@ Text:
                             string fullName = leader.name?.ToString() ?? "";
                             if (string.IsNullOrEmpty(fullName)) continue;
 
-                            long? personId = null;
+                            string personId = "";
 
                             // 🔥 Lấy ID nếu đã tồn tại
                             string checkPersSql = "SELECT ID FROM Person WHERE CompanyID = $cid AND FullName = $name";
@@ -3049,12 +3049,12 @@ Text:
 
                                 var result = cmdCheckP.ExecuteScalar();
                                 if (result != null)
-                                    personId = Convert.ToInt64(result);
+                                    personId = result.ToString();
                             }
 
-                            if (personId != null)
+                            if (!string.IsNullOrEmpty(personId))
                             {
-                                                                                                                                string sqlUpdate = @"UPDATE Person 
+                                string sqlUpdate = @"UPDATE Person 
                             SET Position = CASE WHEN ($pos IS NOT NULL AND TRIM($pos) <> '' AND UPPER(TRIM($pos)) <> 'N/A') THEN $pos ELSE Position END,
                                 Linkedin = CASE WHEN ($link IS NOT NULL AND TRIM($link) <> '' AND UPPER(TRIM($link)) <> 'N/A') THEN $link ELSE Linkedin END,
                                 Email = CASE WHEN ($mail IS NOT NULL AND TRIM($mail) <> '' AND UPPER(TRIM($mail)) <> 'N/A') THEN $mail ELSE Email END,
@@ -3076,15 +3076,14 @@ Text:
                             }
                             else
                             {
-                                // INSERT + lấy ID luôn
+                                personId = Guid.NewGuid().ToString();
                                 string sqlInsert = @"
-                            INSERT INTO Person (CompanyID, FullName, Position, Linkedin, Email, Phone, LastUpdate) 
-                            VALUES ($cid, $name, $pos, $link, $mail, $phone, $date);
-                            SELECT last_insert_rowid();
-                        ";
+                            INSERT INTO Person (ID, CompanyID, FullName, Position, Linkedin, Email, Phone, LastUpdate) 
+                            VALUES ($id, $cid, $name, $pos, $link, $mail, $phone, $date)";
 
                                 using (var cmd = new SqliteCommand(sqlInsert, conn, trans))
                                 {
+                                    cmd.Parameters.AddWithValue("$id", personId);
                                     cmd.Parameters.AddWithValue("$cid", outCompanyId);
                                     cmd.Parameters.AddWithValue("$name", fullName);
                                     cmd.Parameters.AddWithValue("$pos", leader.position?.ToString() ?? "");
@@ -3093,7 +3092,7 @@ Text:
                                     cmd.Parameters.AddWithValue("$phone", leader.phone?.ToString() ?? "");
                                     cmd.Parameters.AddWithValue("$date", now);
 
-                                    personId = (long)cmd.ExecuteScalar();
+                                    cmd.ExecuteNonQuery();
                                 }
                             }
 
@@ -3109,7 +3108,7 @@ Text:
                 System.Diagnostics.Debug.WriteLine("Lỗi SaveCrawlResult: " + ex.Message);
             }
 
-            return Task.FromResult<(long? lastPersonId, string companyId)>((lastPersonId, companyId));
+            return Task.FromResult<(string lastPersonId, string companyId)>((lastPersonId, companyId));
         }
         private async void btnStop_Click(object sender, EventArgs e)
         {
