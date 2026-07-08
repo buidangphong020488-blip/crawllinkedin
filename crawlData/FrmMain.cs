@@ -971,7 +971,22 @@ namespace crawlData
                             finalPhone = CleanPhone(finalPhone);
                         }
 
-                        if (!string.IsNullOrEmpty(companyId))
+                        if (string.IsNullOrEmpty(companyId))
+                        {
+                            companyId = Guid.NewGuid().ToString();
+                            DatabaseHelper.ExecuteNonQuery(
+                                "INSERT INTO Company (ID, CompanyName, Website, Phone, Email, Linkedin, LastUpdate) VALUES ($id, $name, $web, $phone, $email, $link, $date)",
+                                new[] {
+                                    new SqliteParameter("$id", companyId),
+                                    new SqliteParameter("$name", target.CompanyName),
+                                    new SqliteParameter("$web", target.Website ?? ""),
+                                    new SqliteParameter("$phone", finalPhone),
+                                    new SqliteParameter("$email", finalEmail),
+                                    new SqliteParameter("$link", finalLinkedIn),
+                                    new SqliteParameter("$date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))
+                                });
+                        }
+                        else
                         {
                             DatabaseHelper.ExecuteNonQuery(
                                 "UPDATE Company SET Phone=$phone, Email=$email, Linkedin=$link, LastUpdate=$date WHERE ID=$id",
@@ -994,6 +1009,7 @@ namespace crawlData
                                     mydata.Rows[ri]["PhoneCo"] = finalPhone;
                                     mydata.Rows[ri]["EmailCo"] = finalEmail;
                                     mydata.Rows[ri]["LinkedInCo"] = finalLinkedIn;
+                                    mydata.Rows[ri]["CompanyID"] = companyId;
                                     break;
                                 }
                             }
