@@ -1051,7 +1051,10 @@ namespace crawlData
 
                         if (target.InputRow != null)
                         {
-                            this.Invoke(new Action(() => target.InputRow["Status"] = "Completed"));
+                            this.Invoke(new Action(() => {
+                                target.InputRow["Status"] = "Completed";
+                                target.InputRow["Select"] = false;
+                            }));
                         }
                     }
                     catch (Exception ex)
