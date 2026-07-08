@@ -37,6 +37,7 @@ namespace crawlData
         DataTable mydata;
         private CheckBox chkCheckAll;
         private bool _isUpdatingCheckAll = false;
+        private bool _isRerunMode = false;
         private IWebDriver driver; // Legacy single-thread
         private readonly object _gridLock = new object();
         private ConcurrentBag<IWebDriver> _activeDrivers = new ConcurrentBag<IWebDriver>();
@@ -312,6 +313,7 @@ namespace crawlData
         
         private async void btnStart_Click(object sender, EventArgs e)
         {
+            _isRerunMode = false;
             // 1. KIỂM TRA KEY TRƯỚC KHI CHẠY
             DataTable dtConfig = DatabaseHelper.ExecuteQuery("SELECT aistudio_key FROM Config LIMIT 1");
 
@@ -2738,6 +2740,15 @@ Text:
             totalStaffCrawl = mydata.Rows.Count + 1;
             this.Invoke(new Action(() => {
                 lblOutput.Text = $"OUTPUT: {totalStaffCrawl}";
+
+                if (!_isRerunMode && dgvOutput.Rows.Count > 0)
+                {
+                    int lastIndex = dgvOutput.Rows.Count - 1;
+                    dgvOutput.FirstDisplayedScrollingRowIndex = lastIndex;
+
+                    dgvOutput.ClearSelection();
+                    dgvOutput.Rows[lastIndex].Selected = true;
+                }
             }));
         }
         private void RenumberSTT()
@@ -3881,8 +3892,9 @@ Text:
             ctxMenu.Items.Add(menuCrawlWebsite);
             ctxMenu.Items.Add(menuCrawlLinkedIn);
 
-            menuChayLai.Click += async (s, ev) =>
+                        menuChayLai.Click += async (s, ev) =>
             {
+                _isRerunMode = true;
                 // Thu thập tất cả CompanyName từ các dòng đang được ✅ check hoặc đang được bôi xanh (Selected)
                 var companiesToRerun = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -3977,8 +3989,9 @@ Text:
             };
 
 
-            menuUnblock.Click += async (s, ev) =>
+                        menuUnblock.Click += async (s, ev) =>
             {
+                _isRerunMode = true;
                 // Lấy tất cả các dòng Person được check, chọn hoặc bôi xanh
                 var checkedRows = new List<DataGridViewRow>();
                 
@@ -4073,8 +4086,9 @@ Text:
                 }
             };
 
-            menuCrawlGoogle.Click += async (s, ev) =>
+                        menuCrawlGoogle.Click += async (s, ev) =>
             {
+                _isRerunMode = true;
                 // Thu thập tất cả CompanyName từ các dòng đang được ✅ check
                 var companiesToRerun = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -4165,8 +4179,9 @@ Text:
                                 finally { btnStart.Enabled = true; btnStop.Enabled = false; lblStatus.Text = "Finished Google Crawl"; UncheckOutputGrid(); }
             };
 
-            menuCrawlWebsite.Click += async (s, ev) =>
+                        menuCrawlWebsite.Click += async (s, ev) =>
             {
+                _isRerunMode = true;
                 // Thu thập các dòng Company được chọn
                 var selectedCompRows = new List<DataGridViewRow>();
                 var seenCompanies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -4297,8 +4312,9 @@ Text:
                 }
             };
 
-            menuCrawlLinkedIn.Click += async (s, ev) =>
+                        menuCrawlLinkedIn.Click += async (s, ev) =>
             {
+                _isRerunMode = true;
                 // Thu thập các dòng Company được chọn
                 var selectedCompRows = new List<DataGridViewRow>();
                 var seenCompanies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -4837,6 +4853,7 @@ Text:
         }
         private async void btnStart_Click1(object sender, EventArgs e)
         {
+            _isRerunMode = false;
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
             btnStart.Enabled = false;
