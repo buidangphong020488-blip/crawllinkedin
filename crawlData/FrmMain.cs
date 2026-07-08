@@ -2579,7 +2579,7 @@ Text:
             drCompany["CompanyName"] = first["CompanyName"];
             drCompany["CompanyAddress"] = first["Address"];
             drCompany["Industry"] = first["Industry"];
-            drCompany["PhoneCo"] = first["Phone"];
+            drCompany["PhoneCo"] = CleanPhone(first["Phone"]?.ToString() ?? "");
             drCompany["Website"] = first["Website"];
             drCompany["EmailCo"] = first["Email"];
             drCompany["LinkedInCo"] = first["CoLink"];
@@ -2795,8 +2795,6 @@ Text:
                         sqlCompany = @"INSERT INTO Company (ID, CompanyName, Address, Website, Industry, Email, Linkedin, Phone, LastUpdate) 
                                Values ($id, $name, $addr, $web, $industry, $mail, $link, $phone, $date)";
                     }
-                    else
-                    {
                         sqlCompany = @"UPDATE Company 
                                SET CompanyName = CASE WHEN (CompanyName IS NULL OR TRIM(CompanyName) = '' OR UPPER(TRIM(CompanyName)) = 'N/A') THEN $name ELSE CompanyName END,
                                    Address = CASE WHEN (Address IS NULL OR TRIM(Address) = '' OR UPPER(TRIM(Address)) = 'N/A') THEN $addr ELSE Address END,
@@ -2804,10 +2802,9 @@ Text:
                                    Industry = CASE WHEN (Industry IS NULL OR TRIM(Industry) = '' OR UPPER(TRIM(Industry)) = 'N/A') THEN $industry ELSE Industry END,
                                    Email = CASE WHEN (Email IS NULL OR TRIM(Email) = '' OR UPPER(TRIM(Email)) = 'N/A') THEN $mail ELSE Email END,
                                    Linkedin = CASE WHEN (Linkedin IS NULL OR TRIM(Linkedin) = '' OR UPPER(TRIM(Linkedin)) = 'N/A') THEN $link ELSE Linkedin END,
-                                   Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A') THEN $phone ELSE Phone END,
+                                   Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A' OR Phone LIKE '%Lỗi trích xuất%') THEN $phone ELSE Phone END,
                                    LastUpdate = $date
                                WHERE ID=$id";
-                    }
 
                     using (var cmdComp = new SqliteCommand(sqlCompany, conn, trans))
                     {
@@ -2970,8 +2967,6 @@ Text:
                     (ID, CompanyName, Address, Website, Industry, Email, Linkedin, Phone, LastUpdate) 
                     VALUES ($id, $name, $addr, $web, $industry, $mail, $link, $phone, $date)";
                     }
-                    else
-                    {
                         sqlCompany = @"UPDATE Company 
                     SET CompanyName = CASE WHEN (CompanyName IS NULL OR TRIM(CompanyName) = '' OR UPPER(TRIM(CompanyName)) = 'N/A') THEN $name ELSE CompanyName END,
                         Address = CASE WHEN (Address IS NULL OR TRIM(Address) = '' OR UPPER(TRIM(Address)) = 'N/A') THEN $addr ELSE Address END,
@@ -2979,10 +2974,9 @@ Text:
                         Industry = CASE WHEN (Industry IS NULL OR TRIM(Industry) = '' OR UPPER(TRIM(Industry)) = 'N/A') THEN $industry ELSE Industry END,
                         Email = CASE WHEN (Email IS NULL OR TRIM(Email) = '' OR UPPER(TRIM(Email)) = 'N/A') THEN $mail ELSE Email END,
                         Linkedin = CASE WHEN (Linkedin IS NULL OR TRIM(Linkedin) = '' OR UPPER(TRIM(Linkedin)) = 'N/A') THEN $link ELSE Linkedin END,
-                        Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A') THEN $phone ELSE Phone END,
+                        Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A' OR Phone LIKE '%Lỗi trích xuất%') THEN $phone ELSE Phone END,
                         LastUpdate=$date 
                     WHERE ID=$id";
-                    }
 
                     using (var cmdComp = new SqliteCommand(sqlCompany, conn, trans))
                     {
