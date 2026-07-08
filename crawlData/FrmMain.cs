@@ -2932,7 +2932,7 @@ Text:
             if (string.IsNullOrEmpty(phone)) return "";
             var lines = phone.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
                              .Select(l => l.Trim())
-                             .Where(l => !string.Equals(l, "Lỗi trích xuất email, số điện thoại", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(l));
+                             .Where(l => !string.IsNullOrEmpty(l));
             return string.Join("\n", lines);
         }
 
