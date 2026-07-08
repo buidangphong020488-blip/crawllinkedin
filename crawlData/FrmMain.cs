@@ -2795,14 +2795,14 @@ Text:
                         sqlCompany = @"INSERT INTO Company (ID, CompanyName, Address, Website, Industry, Email, Linkedin, Phone, LastUpdate) 
                                Values ($id, $name, $addr, $web, $industry, $mail, $link, $phone, $date)";
                     }
-                        sqlCompany = @"UPDATE Company 
-                               SET CompanyName = CASE WHEN (CompanyName IS NULL OR TRIM(CompanyName) = '' OR UPPER(TRIM(CompanyName)) = 'N/A') THEN $name ELSE CompanyName END,
-                                   Address = CASE WHEN (Address IS NULL OR TRIM(Address) = '' OR UPPER(TRIM(Address)) = 'N/A') THEN $addr ELSE Address END,
-                                   Website = CASE WHEN (Website IS NULL OR TRIM(Website) = '' OR UPPER(TRIM(Website)) = 'N/A') THEN $web ELSE Website END,
-                                   Industry = CASE WHEN (Industry IS NULL OR TRIM(Industry) = '' OR UPPER(TRIM(Industry)) = 'N/A') THEN $industry ELSE Industry END,
-                                   Email = CASE WHEN (Email IS NULL OR TRIM(Email) = '' OR UPPER(TRIM(Email)) = 'N/A') THEN $mail ELSE Email END,
-                                   Linkedin = CASE WHEN (Linkedin IS NULL OR TRIM(Linkedin) = '' OR UPPER(TRIM(Linkedin)) = 'N/A') THEN $link ELSE Linkedin END,
-                                   Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A' OR Phone LIKE '%Lỗi trích xuất%') THEN $phone ELSE Phone END,
+                                                sqlCompany = @"UPDATE Company 
+                               SET CompanyName = CASE WHEN ($name IS NOT NULL AND TRIM($name) <> '' AND UPPER(TRIM($name)) <> 'N/A') THEN $name ELSE CompanyName END,
+                                   Address = CASE WHEN ($addr IS NOT NULL AND TRIM($addr) <> '' AND UPPER(TRIM($addr)) <> 'N/A') THEN $addr ELSE Address END,
+                                   Website = CASE WHEN ($web IS NOT NULL AND TRIM($web) <> '' AND UPPER(TRIM($web)) <> 'N/A') THEN $web ELSE Website END,
+                                   Industry = CASE WHEN ($industry IS NOT NULL AND TRIM($industry) <> '' AND UPPER(TRIM($industry)) <> 'N/A') THEN $industry ELSE Industry END,
+                                   Email = CASE WHEN ($mail IS NOT NULL AND TRIM($mail) <> '' AND UPPER(TRIM($mail)) <> 'N/A') THEN $mail ELSE Email END,
+                                   Linkedin = CASE WHEN ($link IS NOT NULL AND TRIM($link) <> '' AND UPPER(TRIM($link)) <> 'N/A') THEN $link ELSE Linkedin END,
+                                   Phone = CASE WHEN ($phone IS NOT NULL AND TRIM($phone) <> '' AND UPPER(TRIM($phone)) <> 'N/A') THEN $phone ELSE Phone END,
                                    LastUpdate = $date
                                WHERE ID=$id";
 
@@ -2846,13 +2846,13 @@ Text:
                             string sqlPers;
                             if (personExists)
                             {
-                                sqlPers = @"UPDATE Person 
-                                            SET Position = CASE WHEN (Position IS NULL OR TRIM(Position) = '' OR UPPER(TRIM(Position)) = 'N/A') THEN $pos ELSE Position END,
-                                                Linkedin = CASE WHEN (Linkedin IS NULL OR TRIM(Linkedin) = '' OR UPPER(TRIM(Linkedin)) = 'N/A') THEN $link ELSE Linkedin END,
-                                                Email = CASE WHEN (Email IS NULL OR TRIM(Email) = '' OR UPPER(TRIM(Email)) = 'N/A') THEN $mail ELSE Email END,
-                                                Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A') THEN $phone ELSE Phone END,
-                                                LastUpdate=$date 
-                                            WHERE CompanyID=$cid AND FullName=$name";
+                                                                sqlPers = @"UPDATE Person 
+                                             SET Position = CASE WHEN ($pos IS NOT NULL AND TRIM($pos) <> '' AND UPPER(TRIM($pos)) <> 'N/A') THEN $pos ELSE Position END,
+                                                 Linkedin = CASE WHEN ($link IS NOT NULL AND TRIM($link) <> '' AND UPPER(TRIM($link)) <> 'N/A') THEN $link ELSE Linkedin END,
+                                                 Email = CASE WHEN ($mail IS NOT NULL AND TRIM($mail) <> '' AND UPPER(TRIM($mail)) <> 'N/A') THEN $mail ELSE Email END,
+                                                 Phone = CASE WHEN ($phone IS NOT NULL AND TRIM($phone) <> '' AND UPPER(TRIM($phone)) <> 'N/A') THEN $phone ELSE Phone END,
+                                                 LastUpdate=$date 
+                                             WHERE CompanyID=$cid AND FullName=$name";
                             }
                             else
                             {
@@ -2967,14 +2967,14 @@ Text:
                     (ID, CompanyName, Address, Website, Industry, Email, Linkedin, Phone, LastUpdate) 
                     VALUES ($id, $name, $addr, $web, $industry, $mail, $link, $phone, $date)";
                     }
-                        sqlCompany = @"UPDATE Company 
-                    SET CompanyName = CASE WHEN (CompanyName IS NULL OR TRIM(CompanyName) = '' OR UPPER(TRIM(CompanyName)) = 'N/A') THEN $name ELSE CompanyName END,
-                        Address = CASE WHEN (Address IS NULL OR TRIM(Address) = '' OR UPPER(TRIM(Address)) = 'N/A') THEN $addr ELSE Address END,
-                        Website = CASE WHEN (Website IS NULL OR TRIM(Website) = '' OR UPPER(TRIM(Website)) = 'N/A') THEN $web ELSE Website END,
-                        Industry = CASE WHEN (Industry IS NULL OR TRIM(Industry) = '' OR UPPER(TRIM(Industry)) = 'N/A') THEN $industry ELSE Industry END,
-                        Email = CASE WHEN (Email IS NULL OR TRIM(Email) = '' OR UPPER(TRIM(Email)) = 'N/A') THEN $mail ELSE Email END,
-                        Linkedin = CASE WHEN (Linkedin IS NULL OR TRIM(Linkedin) = '' OR UPPER(TRIM(Linkedin)) = 'N/A') THEN $link ELSE Linkedin END,
-                        Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A' OR Phone LIKE '%Lỗi trích xuất%') THEN $phone ELSE Phone END,
+                                                sqlCompany = @"UPDATE Company 
+                    SET CompanyName = CASE WHEN ($name IS NOT NULL AND TRIM($name) <> '' AND UPPER(TRIM($name)) <> 'N/A') THEN $name ELSE CompanyName END,
+                        Address = CASE WHEN ($addr IS NOT NULL AND TRIM($addr) <> '' AND UPPER(TRIM($addr)) <> 'N/A') THEN $addr ELSE Address END,
+                        Website = CASE WHEN ($web IS NOT NULL AND TRIM($web) <> '' AND UPPER(TRIM($web)) <> 'N/A') THEN $web ELSE Website END,
+                        Industry = CASE WHEN ($industry IS NOT NULL AND TRIM($industry) <> '' AND UPPER(TRIM($industry)) <> 'N/A') THEN $industry ELSE Industry END,
+                        Email = CASE WHEN ($mail IS NOT NULL AND TRIM($mail) <> '' AND UPPER(TRIM($mail)) <> 'N/A') THEN $mail ELSE Email END,
+                        Linkedin = CASE WHEN ($link IS NOT NULL AND TRIM($link) <> '' AND UPPER(TRIM($link)) <> 'N/A') THEN $link ELSE Linkedin END,
+                        Phone = CASE WHEN ($phone IS NOT NULL AND TRIM($phone) <> '' AND UPPER(TRIM($phone)) <> 'N/A') THEN $phone ELSE Phone END,
                         LastUpdate=$date 
                     WHERE ID=$id";
 
@@ -3017,11 +3017,11 @@ Text:
 
                             if (personId != null)
                             {
-                                string sqlUpdate = @"UPDATE Person 
-                            SET Position = CASE WHEN (Position IS NULL OR TRIM(Position) = '' OR UPPER(TRIM(Position)) = 'N/A') THEN $pos ELSE Position END,
-                                Linkedin = CASE WHEN (Linkedin IS NULL OR TRIM(Linkedin) = '' OR UPPER(TRIM(Linkedin)) = 'N/A') THEN $link ELSE Linkedin END,
-                                Email = CASE WHEN (Email IS NULL OR TRIM(Email) = '' OR UPPER(TRIM(Email)) = 'N/A') THEN $mail ELSE Email END,
-                                Phone = CASE WHEN (Phone IS NULL OR TRIM(Phone) = '' OR UPPER(TRIM(Phone)) = 'N/A') THEN $phone ELSE Phone END,
+                                                                string sqlUpdate = @"UPDATE Person 
+                            SET Position = CASE WHEN ($pos IS NOT NULL AND TRIM($pos) <> '' AND UPPER(TRIM($pos)) <> 'N/A') THEN $pos ELSE Position END,
+                                Linkedin = CASE WHEN ($link IS NOT NULL AND TRIM($link) <> '' AND UPPER(TRIM($link)) <> 'N/A') THEN $link ELSE Linkedin END,
+                                Email = CASE WHEN ($mail IS NOT NULL AND TRIM($mail) <> '' AND UPPER(TRIM($mail)) <> 'N/A') THEN $mail ELSE Email END,
+                                Phone = CASE WHEN ($phone IS NOT NULL AND TRIM($phone) <> '' AND UPPER(TRIM($phone)) <> 'N/A') THEN $phone ELSE Phone END,
                                 LastUpdate=$date 
                             WHERE ID=$id";
 
