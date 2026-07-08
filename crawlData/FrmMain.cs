@@ -36,6 +36,7 @@ namespace crawlData
         private CancellationTokenSource _cts;
         DataTable mydata;
         private CheckBox chkCheckAll;
+        private CheckBox chkCheckAllOutput;
         private bool _isUpdatingCheckAll = false;
         private bool _isRerunMode = false;
         private IWebDriver driver; // Legacy single-thread
@@ -104,6 +105,19 @@ namespace crawlData
             chkCheckAll.CheckedChanged += ChkCheckAll_CheckedChanged;
             this.Controls.Add(chkCheckAll);
             chkCheckAll.BringToFront();
+
+            // Add CheckBox "Chọn tất cả" near lblOutput
+            chkCheckAllOutput = new CheckBox
+            {
+                Text = "Chọn tất cả",
+                ForeColor = Color.FromArgb(205, 214, 244),
+                Location = new Point(120, 300),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            chkCheckAllOutput.CheckedChanged += ChkCheckAllOutput_CheckedChanged;
+            this.Controls.Add(chkCheckAllOutput);
+            chkCheckAllOutput.BringToFront();
 
             InitGridOutput();
             LoadColumnSettings();
@@ -1536,7 +1550,7 @@ namespace crawlData
                                         }
                                     }
 
-                                                                         var crawlRes = await SaveCrawlResult((object)item, CompanyName);
+                                      var crawlRes = await SaveCrawlResult((object)item, CompanyName);
                                      string personId = crawlRes.lastPersonId ?? "";
                                      string companyId = crawlRes.companyId;
 
@@ -3632,6 +3646,55 @@ Text:
             }
         }
 
+        private void ChkCheckAllOutput_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_isUpdatingCheckAll) return;
+            _isUpdatingCheckAll = true;
+            bool isChecked = chkCheckAllOutput.Checked;
+            foreach (DataGridViewRow row in dgvOutput.Rows)
+            {
+                string rowType = row.Cells["RowType"].Value?.ToString() ?? "";
+                if (rowType == "Company")
+                {
+                    row.Cells["chkSelect"].Value = isChecked;
+                }
+            }
+            _isUpdatingCheckAll = false;
+        }
+
+        private void dgvOutput_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (_isUpdatingCheckAll) return;
+            if (e.RowIndex >= 0 && dgvOutput.Columns.Contains("chkSelect") && dgvOutput.Columns[e.ColumnIndex].Name == "chkSelect")
+            {
+                UpdateCheckAllOutputState();
+            }
+        }
+
+        private void UpdateCheckAllOutputState()
+        {
+            if (_isUpdatingCheckAll) return;
+            _isUpdatingCheckAll = true;
+            bool allChecked = true;
+            bool anyCompany = false;
+            foreach (DataGridViewRow row in dgvOutput.Rows)
+            {
+                string rowType = row.Cells["RowType"].Value?.ToString() ?? "";
+                if (rowType == "Company")
+                {
+                    anyCompany = true;
+                    bool isChecked = row.Cells["chkSelect"].Value is bool b && b;
+                    if (!isChecked)
+                    {
+                        allChecked = false;
+                        break;
+                    }
+                }
+            }
+            chkCheckAllOutput.Checked = anyCompany && allChecked;
+            _isUpdatingCheckAll = false;
+        }
+
                 private void dgvInput_CurrentCellDirtyStateChanged(object sender, EventArgs e)
         {
             if (dgvInput.IsCurrentCellDirty)
@@ -3765,6 +3828,7 @@ Text:
                 }
             };
             dgvOutput.CurrentCellDirtyStateChanged += dgvOutput_CurrentCellDirtyStateChanged;
+            dgvOutput.CellValueChanged += dgvOutput_CellValueChanged;
 
             dgvInput.KeyDown += (s, e) =>
             {
