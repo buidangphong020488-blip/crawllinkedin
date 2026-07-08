@@ -776,9 +776,9 @@ namespace crawlData
                                         }
                                     }
 
-                                    var crawlRes = await SaveCrawlResult(item, CompanyName);
-                                    long personId = crawlRes.lastPersonId ?? 0;
-                                    string companyId = crawlRes.companyId;
+                                                                         var crawlRes = await SaveCrawlResult((object)item, CompanyName);
+                                     long personId = crawlRes.lastPersonId ?? 0;
+                                     string companyId = crawlRes.companyId;
                                     bool isEmpty = IsResultEmpty(item);
 
                                     this.Invoke(new Action(() =>
@@ -1518,9 +1518,9 @@ namespace crawlData
                                         }
                                     }
 
-                                    var crawlRes = await SaveCrawlResult(item, CompanyName);
-                                    long personId = crawlRes.lastPersonId ?? 0;
-                                    string companyId = crawlRes.companyId;
+                                                                         var crawlRes = await SaveCrawlResult((object)item, CompanyName);
+                                     long personId = crawlRes.lastPersonId ?? 0;
+                                     string companyId = crawlRes.companyId;
 
                                     // Kiểm tra xem kết quả có thực sự có data hay chỉ có tên
                                     bool isEmpty = IsResultEmpty(item);
@@ -2228,7 +2228,7 @@ Text:
                                         continue; // thử item tiếp trong companies (nếu có)
 
                                     // Tìm được website → lưu DB + update grid rồi dừng luôn
-                                     var crawlRes = await SaveCrawlResult(item, CompanyName);
+                                                                          var crawlRes = await SaveCrawlResult((object)item, CompanyName);
                                      long personId = crawlRes.lastPersonId ?? 0;
                                      string companyId = crawlRes.companyId;
                                      foundWebsite = true;
@@ -4870,7 +4870,7 @@ Text:
                                     if (token.IsCancellationRequested) break;
 
                                     // LƯU VÀO DATABASE
-                                     var crawlRes = await SaveCrawlResult(item, CompanyName);
+                                                                          var crawlRes = await SaveCrawlResult((object)item, CompanyName);
                                      CompanyAddress = item.address ?? "";
                                      Industry = item.industry ?? "";
                                      PhoneCo = item.phone ?? "";                                    
