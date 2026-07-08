@@ -3869,6 +3869,10 @@ Text:
             dgvOutput.CellFormatting -= dgvOutput_CellFormatting;
             dgvOutput.CellFormatting += dgvOutput_CellFormatting;
 
+            // Đăng ký DataBindingComplete để ẩn checked dòng con Person
+            dgvOutput.DataBindingComplete -= dgvOutput_DataBindingComplete;
+            dgvOutput.DataBindingComplete += dgvOutput_DataBindingComplete;
+
             // === RIGHT-CLICK CONTEXT MENU ===
             var ctxMenu = new ContextMenuStrip();
             var menuChayLai = new ToolStripMenuItem("🔄 Chạy lại");
@@ -4509,6 +4513,25 @@ Text:
                     e.CellStyle.ForeColor = bgColor;
                     e.CellStyle.SelectionBackColor = Color.FromArgb(69, 71, 90);
                     e.CellStyle.SelectionForeColor = Color.FromArgb(69, 71, 90);
+                }
+            }
+        }
+
+        private void dgvOutput_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            if (dgvOutput.Columns.Contains("chkSelect") && dgvOutput.Columns.Contains("RowType"))
+            {
+                foreach (DataGridViewRow row in dgvOutput.Rows)
+                {
+                    if (row.Cells["RowType"].Value?.ToString() == "Person")
+                    {
+                        if (row.Cells["chkSelect"] is DataGridViewCheckBoxCell)
+                        {
+                            row.Cells["chkSelect"] = new DataGridViewTextBoxCell();
+                            row.Cells["chkSelect"].Value = null;
+                            row.Cells["chkSelect"].ReadOnly = true;
+                        }
+                    }
                 }
             }
         }
