@@ -3560,11 +3560,19 @@ Text:
             }
         }
 
-        private void dgvInput_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+                private void dgvInput_CurrentCellDirtyStateChanged(object sender, EventArgs e)
         {
             if (dgvInput.IsCurrentCellDirty)
             {
                 dgvInput.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private void dgvOutput_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            if (dgvOutput.IsCurrentCellDirty)
+            {
+                dgvOutput.CommitEdit(DataGridViewDataErrorContexts.Commit);
             }
         }
 
@@ -3665,7 +3673,7 @@ Text:
 
         private void InitGridOutput()
         {
-            dgvOutput.KeyDown += (s, e) =>
+                        dgvOutput.KeyDown += (s, e) =>
             {
                 if (e.Control && e.KeyCode == System.Windows.Forms.Keys.C)
                 {
@@ -3684,6 +3692,7 @@ Text:
                     }
                 }
             };
+            dgvOutput.CurrentCellDirtyStateChanged += dgvOutput_CurrentCellDirtyStateChanged;
 
             dgvInput.KeyDown += (s, e) =>
             {
