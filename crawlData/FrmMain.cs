@@ -518,6 +518,7 @@ namespace crawlData
                             this.Invoke(new Action(() =>
                             {
                                 row["Status"] = "Skipped";
+                                row["Select"] = false;
                                 LoadSpecificCompanyToGrid(CompanyName, row["STT"]?.ToString() ?? "");
                             }));
                             currentRowIndex++;
@@ -781,13 +782,14 @@ namespace crawlData
                                     bool isEmpty = IsResultEmpty(item);
 
                                     this.Invoke(new Action(() =>
-                                    {
-                                        lock (_gridLock)
-                                        {
-                                            UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
-                                        }
-                                        row["Status"] = isEmpty ? "Completed but Empty" : "Completed";
-                                    }));
+                                      {
+                                          lock (_gridLock)
+                                          {
+                                              UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
+                                          }
+                                          row["Status"] = isEmpty ? "Completed but Empty" : "Completed";
+                                          row["Select"] = false;
+                                      }));
                                 }
                             }
                         }
@@ -1140,6 +1142,7 @@ namespace crawlData
                             this.Invoke(new Action(() =>
                             {
                                 row["Status"] = "Skipped";
+                                row["Select"] = false;
                                 LoadSpecificCompanyToGrid(CompanyName, row["STT"]?.ToString() ?? "");
                             }));
                             currentRowIndex++;
@@ -1487,13 +1490,14 @@ namespace crawlData
                                     bool isEmpty = IsResultEmpty(item);
 
                                     this.Invoke(new Action(() =>
-                                    {
-                                        lock (_gridLock)
-                                        {
-                                            UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
-                                        }
-                                        row["Status"] = isEmpty ? "Completed but Empty" : "Completed";
-                                    }));
+                                      {
+                                          lock (_gridLock)
+                                          {
+                                              UpdateGridOutput(item, CompanyName, personId.ToString(), companyId, row["STT"]?.ToString() ?? "", ref sttCount);
+                                          }
+                                          row["Status"] = isEmpty ? "Completed but Empty" : "Completed";
+                                          row["Select"] = false;
+                                      }));
                                     
                                     // Luôn tìm manager trên LinkedIn /people/ (kể cả khi đã có leader LinkedIn)
                                     {
@@ -2217,7 +2221,8 @@ Text:
                                          }
 
                                         row["Status"] = "Completed (Retry)";
-                                    }));
+                                         row["Select"] = false;
+                                     }));
 
                                     break; // Đã xử lý xong 1 công ty → thoát foreach, sang công ty kế
                                 }
@@ -4784,10 +4789,11 @@ Text:
                                      dr["CompanyID"] = crawlRes.companyId;
                                      dr["RowType"] = "Company";
                                     this.Invoke(new Action(() =>
-                                    {
-                                        mydata.Rows.Add(dr);
-                                        row["Status"] = "Completed";
-                                    }));
+                                     {
+                                         mydata.Rows.Add(dr);
+                                         row["Status"] = "Completed";
+                                         row["Select"] = false;
+                                     }));
 
                                     // --- ROW CON: Nhân sự ---
                                     if (item.leaders != null && item.leaders.Count > 0)
