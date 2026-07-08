@@ -3472,8 +3472,9 @@ Text:
             }
         }
 
-        private void FormatGridView(string col1, string col2, string col3 = "")
+                private void FormatGridView(string col1, string col2, string col3 = "")
         {
+            dgvInput.ReadOnly = false;
             // Format Select column
             if (dgvInput.Columns.Contains("Select"))
             {
@@ -3732,9 +3733,10 @@ Text:
             mydata.Columns.Add("PhonePe");
             mydata.Columns.Add("RowType"); // "Company" hoặc "Person"
 
-            // Tắt auto-gen để kiểm soát thứ tự cột hoàn toàn
+                        // Tắt auto-gen để kiểm soát thứ tự cột hoàn toàn
             dgvOutput.AutoGenerateColumns = false;
             dgvOutput.MultiSelect = true; // Cho phép check nhiều dòng
+            dgvOutput.ReadOnly = false;
             dgvOutput.DataSource = null;
             dgvOutput.Columns.Clear();
             dgvOutput.DataSource = mydata;
@@ -3745,8 +3747,9 @@ Text:
             chkCol.HeaderText = "✓";
             chkCol.Width = 30;
             chkCol.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            chkCol.FalseValue = false;
+                        chkCol.FalseValue = false;
             chkCol.TrueValue = true;
+            chkCol.ReadOnly = false;
             chkCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgvOutput.Columns.Add(chkCol);
 
@@ -3760,12 +3763,13 @@ Text:
                 ("LinkedInPe", "LinkedInPe"), ("EmailPe", "EmailPe"), ("PhonePe", "PhonePe"),
                 ("RowType", "RowType")
             };
-            foreach (var (name, header) in boundCols)
+                        foreach (var (name, header) in boundCols)
             {
                 var col = new DataGridViewTextBoxColumn();
                 col.Name = name;
                 col.HeaderText = header;
                 col.DataPropertyName = name; // Bind vào DataTable column
+                col.ReadOnly = true;
                 dgvOutput.Columns.Add(col);
             }
 
