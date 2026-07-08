@@ -2904,6 +2904,22 @@ Text:
             return string.Join("\n", lines);
         }
 
+        private void UncheckOutputGrid()
+        {
+            if (dgvOutput.InvokeRequired)
+            {
+                dgvOutput.Invoke(new Action(UncheckOutputGrid));
+                return;
+            }
+            foreach (DataGridViewRow row in dgvOutput.Rows)
+            {
+                if (row.Cells["chkSelect"].Value is bool b && b)
+                {
+                    row.Cells["chkSelect"].Value = false;
+                }
+            }
+        }
+
         public Task<(long? lastPersonId, string companyId)> SaveCrawlResult(dynamic company, string CompanyName)
         {
             long? lastPersonId = null;
@@ -3955,7 +3971,7 @@ Text:
                     await Task.WhenAll(tasks2);
                 }
                 catch { }
-                finally { btnStart.Enabled = true; btnStop.Enabled = false; lblStatus.Text = "Finished"; }
+                                finally { btnStart.Enabled = true; btnStop.Enabled = false; lblStatus.Text = "Finished"; UncheckOutputGrid(); }
             };
 
 
@@ -4014,10 +4030,14 @@ Text:
                     return;
                 }
 
-                foreach (var row in checkedRows)
+                                foreach (var row in checkedRows)
                 {
                     string peLinkedIn = row.Cells["LinkedInPe"].Value?.ToString() ?? "";
-                    if (string.IsNullOrEmpty(peLinkedIn) || peLinkedIn.ToLower() == "n/a") continue;
+                    if (string.IsNullOrEmpty(peLinkedIn) || peLinkedIn.ToLower() == "n/a")
+                    {
+                        row.Cells["chkSelect"].Value = false;
+                        continue;
+                    }
 
                     row.Cells["btnUnBlock"].Value = "Loading...";
                     try
@@ -4037,13 +4057,16 @@ Text:
                             row.Cells["EmailPe"].Value = contact.Email;
                             row.Cells["PhonePe"].Value = contact.Phone;
                             row.Cells["btnUnBlock"].Value = "Done";
-                            row.Cells["chkSelect"].Value = false;
                         }
                     }
                     catch (Exception ex)
                     {
                         row.Cells["btnUnBlock"].Value = "Error";
                         Console.WriteLine($"[Unblock] {peLinkedIn}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        row.Cells["chkSelect"].Value = false;
                     }
                 }
             };
@@ -4137,7 +4160,7 @@ Text:
                     await Task.WhenAll(tasks2);
                 }
                 catch { }
-                finally { btnStart.Enabled = true; btnStop.Enabled = false; lblStatus.Text = "Finished Google Crawl"; }
+                                finally { btnStart.Enabled = true; btnStop.Enabled = false; lblStatus.Text = "Finished Google Crawl"; UncheckOutputGrid(); }
             };
 
             menuCrawlWebsite.Click += async (s, ev) =>
@@ -4264,10 +4287,11 @@ Text:
                     await Task.WhenAll(tasks);
                 }
                 catch { }
-                finally
+                                finally
                 {
                     btnStart.Enabled = true; btnStop.Enabled = false;
                     lblStatus.Text = "Finished Website Crawl";
+                    UncheckOutputGrid();
                 }
             };
 
@@ -4389,10 +4413,11 @@ Text:
                     await Task.WhenAll(tasks);
                 }
                 catch { }
-                finally
+                                finally
                 {
                     btnStart.Enabled = true; btnStop.Enabled = false;
                     lblStatus.Text = "Finished LinkedIn Crawl";
+                    UncheckOutputGrid();
                 }
             };
 
