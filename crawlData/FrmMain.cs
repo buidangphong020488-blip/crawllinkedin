@@ -37,6 +37,7 @@ namespace crawlData
         DataTable mydata;
         private CheckBox chkCheckAll;
         private CheckBox chkCheckAllOutput;
+        private CheckBox chkCheckAllPerson;
         private bool _isUpdatingCheckAll = false;
         private bool _isRerunMode = false;
         private IWebDriver driver; // Legacy single-thread
@@ -118,6 +119,19 @@ namespace crawlData
             chkCheckAllOutput.CheckedChanged += ChkCheckAllOutput_CheckedChanged;
             this.Controls.Add(chkCheckAllOutput);
             chkCheckAllOutput.BringToFront();
+
+            // Add CheckBox "Chọn tất cả Person" near lblOutput
+            chkCheckAllPerson = new CheckBox
+            {
+                Text = "Chọn tất cả Person",
+                ForeColor = Color.FromArgb(205, 214, 244),
+                Location = new Point(240, 300),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            chkCheckAllPerson.CheckedChanged += ChkCheckAllPerson_CheckedChanged;
+            this.Controls.Add(chkCheckAllPerson);
+            chkCheckAllPerson.BringToFront();
 
             InitGridOutput();
             LoadColumnSettings();
@@ -2950,7 +2964,13 @@ Text:
                 {
                     row.Cells["chkSelect"].Value = false;
                 }
+                if (dgvOutput.Columns.Contains("chkSelectPe") && row.Cells["chkSelectPe"].Value is bool bPe && bPe)
+                {
+                    row.Cells["chkSelectPe"].Value = false;
+                }
             }
+            if (chkCheckAllOutput != null) chkCheckAllOutput.Checked = false;
+            if (chkCheckAllPerson != null) chkCheckAllPerson.Checked = false;
         }
 
         public Task<(string lastPersonId, string companyId)> SaveCrawlResult(dynamic company, string CompanyName)
@@ -3250,38 +3270,45 @@ Text:
         {
             if (dgvOutput.Columns[e.ColumnIndex].Name == "btnUnBlock" && e.RowIndex >= 0)
             {
-                string peLinkedIn = dgvOutput.Rows[e.RowIndex].Cells["LinkedInPe"].Value.ToString();
+                string peLinkedIn = dgvOutput.Rows[e.RowIndex].Cells["LinkedInPe"].Value?.ToString() ?? "";
 
                 // Gọi API SaleQL (Giả lập)
                 dgvOutput.Rows[e.RowIndex].Cells["btnUnBlock"].Value = "Loading...";
-                if (peLinkedIn.ToLower() != "n/a")
+                if (peLinkedIn.ToLower() != "n/a" && !string.IsNullOrEmpty(peLinkedIn))
                 {
                     var contact = await CallSaleQLAPI(peLinkedIn); // Hàm này bạn tự định nghĩa API Key
 
                     if (contact != null)
                     {
-                        string PersonID = dgvOutput.Rows[e.RowIndex].Cells["PersonID"].Value.ToString();
-                        DataTable dt = DatabaseHelper.ExecuteQuery("SELECT ID FROM Person WHERE ID='" + PersonID + "'");
-                        if (dt.Rows.Count > 0)
+                        bool hasError = string.IsNullOrEmpty(contact.Email) || contact.Email.StartsWith("Lỗi") || contact.Email == "Person not found";
+                        if (!hasError)
                         {
-                            string phone = "";
-                            string email = "";
-                            if (contact.Phone != null) phone = contact.Phone;
-                            if (contact.Email != null) email = contact.Email;
-                            SqliteParameter[] paras = {
-                            new SqliteParameter("$PersonID",PersonID),
-                            new SqliteParameter("$Email", email),
-                            new SqliteParameter("$Phone",phone)
-                        };
-                            string sql = "UPDATE Person SET Email = $Email,Phone=$Phone WHERE ID=$PersonID";
-
-                            DatabaseHelper.ExecuteNonQuery(sql, paras);
-                            //MessageBox.Show("Đã lưu thành công!");
+                            string PersonID = dgvOutput.Rows[e.RowIndex].Cells["PersonID"].Value?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(PersonID))
+                            {
+                                DataTable dt = DatabaseHelper.ExecuteQuery("SELECT ID FROM Person WHERE ID='" + PersonID + "'");
+                                if (dt.Rows.Count > 0)
+                                {
+                                    string phone = contact.Phone ?? "";
+                                    string email = contact.Email ?? "";
+                                    SqliteParameter[] paras = {
+                                        new SqliteParameter("$PersonID",PersonID),
+                                        new SqliteParameter("$Email", email),
+                                        new SqliteParameter("$Phone",phone)
+                                    };
+                                    string sql = "UPDATE Person SET Email = $Email,Phone=$Phone WHERE ID=$PersonID";
+                                    DatabaseHelper.ExecuteNonQuery(sql, paras);
+                                }
+                            }
                         }
                         dgvOutput.Rows[e.RowIndex].Cells["EmailPe"].Value = contact.Email;
                         dgvOutput.Rows[e.RowIndex].Cells["PhonePe"].Value = contact.Phone;
-                        dgvOutput.Rows[e.RowIndex].Cells["btnUnBlock"].Value = "Done";
+                        dgvOutput.Rows[e.RowIndex].Cells["btnUnBlock"].Value = hasError ? "Error" : "Done";
                     }
+                }
+                else
+                {
+                    dgvOutput.Rows[e.RowIndex].Cells["btnUnBlock"].Value = "UnBlock";
                 }
             }
         }
@@ -3481,25 +3508,23 @@ Text:
 
         private async Task<SaleQLResult> CallSaleQLAPI(string linkedInUrl)
         {
-            // Thay API Key SaleQL của bạn vào đây
             DataTable dt = DatabaseHelper.ExecuteQuery("SELECT salesql_key FROM Config LIMIT 1");
 
             if (dt.Rows.Count == 0 || string.IsNullOrEmpty(dt.Rows[0]["salesql_key"].ToString()))
             {
-                MessageBox.Show("Lỗi: Chưa tìm thấy SaleQL Key trong Database. Hãy lưu Key ở Form Config trước!");
-                return null;
+                var result = new SaleQLResult();
+                result.Email = "Lỗi: Chưa có SaleQL Key";
+                result.Phone = "N/A";
+                return result;
             }
 
             string apiKey = dt.Rows[0]["salesql_key"].ToString();
-            // Endpoint chuẩn của SaleQL để lấy thông tin từ LinkedIn URL
             string url = $"https://api-public.salesql.com/v1/persons/enrich?linkedin_url={Uri.EscapeDataString(linkedInUrl)}&api_key=" + apiKey;
-            //url = $"https://api-public.salesql.com/v1/persons/enrich?linkedin_url={Uri.EscapeDataString(" https://www.linkedin.com/in/brandon-l-b8871917a")}&api_key=" + apiKey;
 
             using (HttpClient client = new HttpClient())
             {
                 try
                 {
-                    // SaleQL thường yêu cầu API Key trong Header
                     client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
                     var response = await client.GetAsync(url);
@@ -3507,15 +3532,10 @@ Text:
                     if (response.IsSuccessStatusCode)
                     {
                         string json = await response.Content.ReadAsStringAsync();
-
-                        // Phân tích JSON trả về từ SaleQL
-                        // Lưu ý: Cấu trúc này dựa trên Documentation phổ biến của SaleQL, 
-                        // bạn có thể điều chỉnh tùy theo gói API bạn mua.
                         dynamic data = JsonConvert.DeserializeObject(json);
 
                         var result = new SaleQLResult();
 
-                        // Lấy Email (nếu có)
                         if (data.emails != null && data.emails.Count > 0)
                         {
                             var emails = new List<string>();
@@ -3528,7 +3548,6 @@ Text:
                         }
                         else { result.Email = "_N/A"; }
 
-                        // Lấy Phone (nếu có)
                         if (data.phones != null && data.phones.Count > 0)
                         {
                             var phones = new List<string>();
@@ -3546,14 +3565,43 @@ Text:
                     else
                     {
                         string error = await response.Content.ReadAsStringAsync();
-                        MessageBox.Show("Lỗi SaleQL: " + error);
-                        return null;
+                        string errMsg = "Person not found";
+                        if (!string.IsNullOrEmpty(error))
+                        {
+                            try
+                            {
+                                dynamic errObj = JsonConvert.DeserializeObject(error);
+                                if (errObj?.message != null) errMsg = errObj.message.ToString();
+                                else if (errObj?.error != null) errMsg = errObj.error.ToString();
+                                else errMsg = error;
+                            }
+                            catch
+                            {
+                                errMsg = error;
+                            }
+                        }
+
+                        if (response.StatusCode == HttpStatusCode.NotFound || errMsg.ToLower().Contains("person not found") || errMsg.ToLower().Contains("persion not found"))
+                        {
+                            errMsg = "Person not found";
+                        }
+                        else
+                        {
+                            errMsg = "Lỗi: " + errMsg;
+                        }
+
+                        var result = new SaleQLResult();
+                        result.Email = errMsg;
+                        result.Phone = "N/A";
+                        return result;
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Lỗi kết nối SaleQL: " + ex.Message);
-                    return null;
+                    var result = new SaleQLResult();
+                    result.Email = "Lỗi kết nối: " + ex.Message;
+                    result.Phone = "N/A";
+                    return result;
                 }
             }
         }
@@ -3663,12 +3711,38 @@ Text:
             _isUpdatingCheckAll = false;
         }
 
+        private void ChkCheckAllPerson_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_isUpdatingCheckAll) return;
+            _isUpdatingCheckAll = true;
+            bool isChecked = chkCheckAllPerson.Checked;
+            foreach (DataGridViewRow row in dgvOutput.Rows)
+            {
+                string rowType = row.Cells["RowType"].Value?.ToString() ?? "";
+                if (rowType == "Person")
+                {
+                    if (dgvOutput.Columns.Contains("chkSelectPe"))
+                    {
+                        row.Cells["chkSelectPe"].Value = isChecked;
+                    }
+                }
+            }
+            _isUpdatingCheckAll = false;
+        }
+
         private void dgvOutput_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             if (_isUpdatingCheckAll) return;
-            if (e.RowIndex >= 0 && dgvOutput.Columns.Contains("chkSelect") && dgvOutput.Columns[e.ColumnIndex].Name == "chkSelect")
+            if (e.RowIndex >= 0)
             {
-                UpdateCheckAllOutputState();
+                if (dgvOutput.Columns.Contains("chkSelect") && dgvOutput.Columns[e.ColumnIndex].Name == "chkSelect")
+                {
+                    UpdateCheckAllOutputState();
+                }
+                else if (dgvOutput.Columns.Contains("chkSelectPe") && dgvOutput.Columns[e.ColumnIndex].Name == "chkSelectPe")
+                {
+                    UpdateCheckAllPersonState();
+                }
             }
         }
 
@@ -3693,6 +3767,30 @@ Text:
                 }
             }
             chkCheckAllOutput.Checked = anyCompany && allChecked;
+            _isUpdatingCheckAll = false;
+        }
+
+        private void UpdateCheckAllPersonState()
+        {
+            if (_isUpdatingCheckAll) return;
+            _isUpdatingCheckAll = true;
+            bool allChecked = true;
+            bool anyPerson = false;
+            foreach (DataGridViewRow row in dgvOutput.Rows)
+            {
+                string rowType = row.Cells["RowType"].Value?.ToString() ?? "";
+                if (rowType == "Person")
+                {
+                    anyPerson = true;
+                    bool isChecked = dgvOutput.Columns.Contains("chkSelectPe") && row.Cells["chkSelectPe"].Value is bool b && b;
+                    if (!isChecked)
+                    {
+                        allChecked = false;
+                        break;
+                    }
+                }
+            }
+            chkCheckAllPerson.Checked = anyPerson && allChecked;
             _isUpdatingCheckAll = false;
         }
 
@@ -3899,8 +3997,21 @@ Text:
                 ("LinkedInPe", "LinkedInPe"), ("EmailPe", "EmailPe"), ("PhonePe", "PhonePe"),
                 ("RowType", "RowType")
             };
-                        foreach (var (name, header) in boundCols)
+            foreach (var (name, header) in boundCols)
             {
+                if (name == "FullNamePe")
+                {
+                    var chkColPe = new DataGridViewCheckBoxColumn();
+                    chkColPe.Name = "chkSelectPe";
+                    chkColPe.HeaderText = "✓ Pe";
+                    chkColPe.Width = 40;
+                    chkColPe.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                    chkColPe.FalseValue = false;
+                    chkColPe.TrueValue = true;
+                    chkColPe.ReadOnly = false;
+                    chkColPe.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                    dgvOutput.Columns.Add(chkColPe);
+                }
                 var col = new DataGridViewTextBoxColumn();
                 col.Name = name;
                 col.HeaderText = header;
@@ -3940,6 +4051,8 @@ Text:
                 dgvOutput.Columns["STT"].Width = 50;
             if (dgvOutput.Columns.Contains("chkSelect"))
                 dgvOutput.Columns["chkSelect"].Width = 30;
+            if (dgvOutput.Columns.Contains("chkSelectPe"))
+                dgvOutput.Columns["chkSelectPe"].Width = 40;
             if (dgvOutput.Columns.Contains("RowType"))
                 dgvOutput.Columns["RowType"].Visible = false;
             if (dgvOutput.Columns.Contains("CompanyID"))
@@ -3959,10 +4072,14 @@ Text:
             dgvOutput.CellPainting -= dgvOutput_CellPainting;
             dgvOutput.CellPainting += dgvOutput_CellPainting;
 
+            // Đăng ký RowsAdded để thiết lập trạng thái cho dòng mới
+            dgvOutput.RowsAdded -= dgvOutput_RowsAdded;
+            dgvOutput.RowsAdded += dgvOutput_RowsAdded;
+
             // === RIGHT-CLICK CONTEXT MENU ===
             var ctxMenu = new ContextMenuStrip();
             var menuChayLai = new ToolStripMenuItem("🔄 Chạy lại");
-            var menuUnblock = new ToolStripMenuItem("🔓 Unblock (SalesQL)");
+            var menuUnblock = new ToolStripMenuItem("🔓 Run SalesQL");
             var menuCrawlGoogle = new ToolStripMenuItem("🔍 Crawl từ Google");
             var menuCrawlWebsite = new ToolStripMenuItem("🌐 Crawl từ website");
             var menuCrawlLinkedIn = new ToolStripMenuItem("🔗 Crawl từ LinkedIn");
@@ -3971,6 +4088,70 @@ Text:
             ctxMenu.Items.Add(menuCrawlGoogle);
             ctxMenu.Items.Add(menuCrawlWebsite);
             ctxMenu.Items.Add(menuCrawlLinkedIn);
+
+            ctxMenu.Opening += (s, e) =>
+            {
+                bool hasCheckedCompany = false;
+                bool hasCheckedPerson = false;
+
+                foreach (DataGridViewRow row in dgvOutput.Rows)
+                {
+                    string rowType = row.Cells["RowType"].Value?.ToString() ?? "";
+                    if (rowType == "Company")
+                    {
+                        if (row.Cells["chkSelect"].Value is bool b && b)
+                        {
+                            hasCheckedCompany = true;
+                        }
+                    }
+                    else if (rowType == "Person")
+                    {
+                        if (dgvOutput.Columns.Contains("chkSelectPe") && row.Cells["chkSelectPe"].Value is bool b && b)
+                        {
+                            hasCheckedPerson = true;
+                        }
+                    }
+                }
+
+                if (hasCheckedCompany && hasCheckedPerson)
+                {
+                    MessageBox.Show("Chỉ được chọn Company hoặc Person!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    e.Cancel = true;
+                    return;
+                }
+
+                // Ẩn/hiện nút tương ứng theo loại dòng được chọn
+                // Khi chọn Person: chỉ hiện duy nhất nút Run SalesQL
+                // Khi chọn Company: hiện các nút Company và ẩn nút Run SalesQL
+                Point clientPoint = dgvOutput.PointToClient(Cursor.Position);
+                var hit = dgvOutput.HitTest(clientPoint.X, clientPoint.Y);
+
+                string clickedRowType = "";
+                if (hit.RowIndex >= 0)
+                {
+                    clickedRowType = dgvOutput.Rows[hit.RowIndex].Cells["RowType"].Value?.ToString() ?? "";
+                }
+                else if (dgvOutput.CurrentRow != null)
+                {
+                    clickedRowType = dgvOutput.CurrentRow.Cells["RowType"].Value?.ToString() ?? "";
+                }
+
+                bool showRunSalesQL = false;
+                if (hasCheckedPerson)
+                {
+                    showRunSalesQL = true;
+                }
+                else if (!hasCheckedCompany && clickedRowType == "Person")
+                {
+                    showRunSalesQL = true;
+                }
+
+                menuUnblock.Visible = showRunSalesQL;
+                menuChayLai.Visible = !showRunSalesQL;
+                menuCrawlGoogle.Visible = !showRunSalesQL;
+                menuCrawlWebsite.Visible = !showRunSalesQL;
+                menuCrawlLinkedIn.Visible = !showRunSalesQL;
+            };
 
                                     menuChayLai.Click += async (s, ev) =>
             {
@@ -4077,13 +4258,16 @@ Text:
                 // Lấy tất cả các dòng Person được check, chọn hoặc bôi xanh
                 var checkedRows = new List<DataGridViewRow>();
                 
-                // 1. Kiểm tra các dòng được check
+                // 1. Kiểm tra các dòng được check (dùng cột chkSelectPe cho Person)
                 foreach (DataGridViewRow row in dgvOutput.Rows)
                 {
-                    bool isChecked = row.Cells["chkSelect"].Value is bool b && b;
                     string rowType = row.Cells["RowType"].Value?.ToString() ?? "";
-                    if (isChecked && rowType == "Person")
-                        checkedRows.Add(row);
+                    if (rowType == "Person")
+                    {
+                        bool isChecked = dgvOutput.Columns.Contains("chkSelectPe") && row.Cells["chkSelectPe"].Value is bool b && b;
+                        if (isChecked)
+                            checkedRows.Add(row);
+                    }
                 }
 
                 // 2. Nếu không có dòng nào được check, lấy các dòng được chọn (bôi xanh)
@@ -4127,12 +4311,13 @@ Text:
                     return;
                 }
 
-                                foreach (var row in checkedRows)
+                foreach (var row in checkedRows)
                 {
                     string peLinkedIn = row.Cells["LinkedInPe"].Value?.ToString() ?? "";
                     if (string.IsNullOrEmpty(peLinkedIn) || peLinkedIn.ToLower() == "n/a")
                     {
-                        row.Cells["chkSelect"].Value = false;
+                        if (dgvOutput.Columns.Contains("chkSelectPe"))
+                            row.Cells["chkSelectPe"].Value = false;
                         continue;
                     }
 
@@ -4142,18 +4327,22 @@ Text:
                         var contact = await CallSaleQLAPI(peLinkedIn);
                         if (contact != null)
                         {
-                            string personId = row.Cells["PersonID"].Value?.ToString() ?? "";
-                            if (!string.IsNullOrEmpty(personId))
+                            bool hasError = string.IsNullOrEmpty(contact.Email) || contact.Email.StartsWith("Lỗi") || contact.Email == "Person not found";
+                            if (!hasError)
                             {
-                                DatabaseHelper.ExecuteNonQuery(
-                                    "UPDATE Person SET Email=$Email, Phone=$Phone WHERE ID=$ID",
-                                    new[] { new SqliteParameter("$Email", contact.Email ?? ""),
-                                            new SqliteParameter("$Phone", contact.Phone ?? ""),
-                                            new SqliteParameter("$ID", personId) });
+                                string personId = row.Cells["PersonID"].Value?.ToString() ?? "";
+                                if (!string.IsNullOrEmpty(personId))
+                                {
+                                    DatabaseHelper.ExecuteNonQuery(
+                                        "UPDATE Person SET Email=$Email, Phone=$Phone WHERE ID=$ID",
+                                        new[] { new SqliteParameter("$Email", contact.Email ?? ""),
+                                                new SqliteParameter("$Phone", contact.Phone ?? ""),
+                                                new SqliteParameter("$ID", personId) });
+                                }
                             }
                             row.Cells["EmailPe"].Value = contact.Email;
                             row.Cells["PhonePe"].Value = contact.Phone;
-                            row.Cells["btnUnBlock"].Value = "Done";
+                            row.Cells["btnUnBlock"].Value = hasError ? "Error" : "Done";
                         }
                     }
                     catch (Exception ex)
@@ -4163,7 +4352,8 @@ Text:
                     }
                     finally
                     {
-                        row.Cells["chkSelect"].Value = false;
+                        if (dgvOutput.Columns.Contains("chkSelectPe"))
+                            row.Cells["chkSelectPe"].Value = false;
                     }
                 }
             };
@@ -4619,10 +4809,28 @@ Text:
             {
                 foreach (DataGridViewRow row in dgvOutput.Rows)
                 {
-                    if (row.Cells["RowType"].Value?.ToString() == "Person")
+                    string rType = row.Cells["RowType"].Value?.ToString() ?? "";
+                    if (rType == "Person")
                     {
                         row.Cells["chkSelect"].Value = false;
                         row.Cells["chkSelect"].ReadOnly = true;
+                        if (dgvOutput.Columns.Contains("chkSelectPe"))
+                        {
+                            if (row.Cells["chkSelectPe"].Value == null)
+                                row.Cells["chkSelectPe"].Value = false;
+                            row.Cells["chkSelectPe"].ReadOnly = false;
+                        }
+                    }
+                    else if (rType == "Company")
+                    {
+                        if (dgvOutput.Columns.Contains("chkSelectPe"))
+                        {
+                            row.Cells["chkSelectPe"].Value = false;
+                            row.Cells["chkSelectPe"].ReadOnly = true;
+                        }
+                        if (row.Cells["chkSelect"].Value == null)
+                            row.Cells["chkSelect"].Value = false;
+                        row.Cells["chkSelect"].ReadOnly = false;
                     }
                 }
             }
@@ -4633,17 +4841,46 @@ Text:
             if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
             {
                 var dgv = (DataGridView)sender;
-                if (dgv.Columns[e.ColumnIndex].Name == "chkSelect")
+                if (dgv.Columns.Contains("RowType"))
                 {
-                    if (dgv.Columns.Contains("RowType"))
+                    string rowType = dgv.Rows[e.RowIndex].Cells["RowType"].Value?.ToString() ?? "";
+                    string colName = dgv.Columns[e.ColumnIndex].Name;
+                    if (colName == "chkSelect" && rowType == "Person")
                     {
-                        string rowType = dgv.Rows[e.RowIndex].Cells["RowType"].Value?.ToString() ?? "";
-                        if (rowType == "Person")
-                        {
-                            // Chỉ vẽ background mà không vẽ checkbox glyph
-                            e.PaintBackground(e.CellBounds, true);
-                            e.Handled = true;
-                        }
+                        e.PaintBackground(e.CellBounds, true);
+                        e.Handled = true;
+                    }
+                    else if (colName == "chkSelectPe" && rowType == "Company")
+                    {
+                        e.PaintBackground(e.CellBounds, true);
+                        e.Handled = true;
+                    }
+                }
+            }
+        }
+
+        private void dgvOutput_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            for (int i = 0; i < e.RowCount; i++)
+            {
+                int rIdx = e.RowIndex + i;
+                if (rIdx >= 0 && rIdx < dgvOutput.Rows.Count)
+                {
+                    var row = dgvOutput.Rows[rIdx];
+                    string rType = row.Cells["RowType"].Value?.ToString() ?? "";
+
+                    if (dgvOutput.Columns.Contains("chkSelect"))
+                    {
+                        if (row.Cells["chkSelect"].Value == null)
+                            row.Cells["chkSelect"].Value = false;
+                        row.Cells["chkSelect"].ReadOnly = (rType == "Person");
+                    }
+
+                    if (dgvOutput.Columns.Contains("chkSelectPe"))
+                    {
+                        if (row.Cells["chkSelectPe"].Value == null)
+                            row.Cells["chkSelectPe"].Value = false;
+                        row.Cells["chkSelectPe"].ReadOnly = (rType == "Company");
                     }
                 }
             }
