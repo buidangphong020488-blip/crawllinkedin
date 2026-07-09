@@ -1652,7 +1652,8 @@ namespace crawlData
         }
 
         /// <summary>
-        /// Deep crawl: Vào trang chủ website công ty, gửi nội dung cho Gemini bóc tách phone/email.
+        /// Deep crawl: Vào trang chủ website công ty, gửi nội dung cho 
+        /// bóc tách phone/email.
         /// </summary>
         private async Task<(string phone, string email, string linkedin)> EnrichContactFromWebsite(
             IWebDriver driver, string website, string tTag, DataRow row, CancellationToken token)

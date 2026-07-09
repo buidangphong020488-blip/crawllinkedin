@@ -209,7 +209,7 @@ namespace crawlData
         /// Phien ban hien tai cua ung dung. Cap nhat moi lan release.
         /// Dinh dang: Major.Minor.Patch  (vi du: "1.0.0")
         /// </summary>
-        public const string CURRENT_VERSION = "2.6.9.1";
+        public const string CURRENT_VERSION = "2.6.9.2";
 
         /// <summary>
         /// URL tra ve JSON chua thong tin phien ban moi nhat.
